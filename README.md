@@ -41,7 +41,7 @@ pip install swagger-diff-ui
 ### From GitHub
 
 ```bash
-pip install "git+https://github.com/<YOU>/swagger-diff-ui.git"
+pip install "git+https://github.com/Iman-Sharei/swagger-diff-ui.git"
 ```
 
 ### Local editable (developing the package)
