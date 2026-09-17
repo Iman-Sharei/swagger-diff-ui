@@ -1,10 +1,14 @@
 # 🔀 swagger-diff-ui
 
+[![PyPI](https://img.shields.io/pypi/v/swagger-diff-ui.svg)](https://pypi.org/project/swagger-diff-ui/)
+[![Python](https://img.shields.io/pypi/pyversions/swagger-diff-ui.svg)](https://pypi.org/project/swagger-diff-ui/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **Drop-in Swagger UI for Django + DRF** that diffs your live OpenAPI schema against a **git branch or commit** — then paints every changed endpoint as **NEW · UPDATE · DELETE**.
 
 No Node. No separate SPA. Same `/api/docs/` you already open — with a small baseline drawer on top.
 
-![Schema diff UI showing NEW, UPDATE, and DELETE badges on Swagger endpoints](docs/assets/schema-diff-preview.png)
+![Schema diff UI showing NEW, UPDATE, and DELETE badges on Swagger endpoints](https://raw.githubusercontent.com/Iman-Sharei/swagger-diff-ui/main/docs/assets/schema-diff-preview.png)
 
 *Pick a baseline → Compare → see what changed.*
 
@@ -36,22 +40,14 @@ No Node. No separate SPA. Same `/api/docs/` you already open — with a small ba
 
 ## 🚀 Install
 
-### From GitHub
-
-```bash
-pip install "git+https://github.com/Iman-Sharei/swagger-diff-ui.git"
-```
-
-### From PyPI *(when published)*
-
 ```bash
 pip install swagger-diff-ui
 ```
 
-### Local editable
+### From GitHub
 
 ```bash
-pip install -e ".[dev]"
+pip install "git+https://github.com/Iman-Sharei/swagger-diff-ui.git"
 ```
 
 ---
