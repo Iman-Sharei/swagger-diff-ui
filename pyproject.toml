@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "swagger-diff-ui"
+version = "0.1.0"
+description = "Drop-in Swagger UI with OpenAPI schema diff (branch/commit baseline)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "swagger-diff-ui contributors" }]
+dependencies = [
+  "Django>=4.2",
+  "djangorestframework>=3.14",
+  "drf-spectacular>=0.27",
+]
+keywords = ["openapi", "swagger", "django", "drf", "diff", "drf-spectacular"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Web Environment",
+  "Framework :: Django",
+  "Framework :: Django :: 4.2",
+  "Framework :: Django :: 5.0",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Documentation",
+]
+
+[project.urls]
+# Fill these after you create the GitHub repo:
+# Homepage = "https://github.com/<YOU>/swagger-diff-ui"
+# Repository = "https://github.com/<YOU>/swagger-diff-ui"
+# Issues = "https://github.com/<YOU>/swagger-diff-ui/issues"
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "pytest-django>=4"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["swagger_diff_ui*"]
+
+[tool.setuptools.package-data]
+swagger_diff_ui = [
+  "static/**/*",
+  "templates/**/*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["swagger_diff_ui/tests"]
+pythonpath = ["."]

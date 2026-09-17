@@ -1,0 +1,20 @@
+# OpenAPI schema baseline cache
+.schema-cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.venv/
+venv/
+*.egg
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
