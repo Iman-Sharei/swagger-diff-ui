@@ -19,3 +19,6 @@ venv/
 .idea/
 .vscode/
 .venv*/
+.env
+.env.*
+!.env.example
