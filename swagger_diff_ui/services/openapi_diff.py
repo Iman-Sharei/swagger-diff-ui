@@ -441,18 +441,38 @@ def _media_schema(content: Any) -> dict[str, Any] | None:
     return None
 
 
-def _extract_refs(value: Any, out: set[str]) -> None:
+def _extract_refs(
+    value: Any,
+    out: set[str],
+    *,
+    schemas: dict[str, Any] | None = None,
+    visited: set[str] | None = None,
+) -> None:
+    """Collect schema names referenced from ``value``.
+
+    When ``schemas`` is provided, ``$ref`` targets are followed transitively
+    through ``components.schemas`` (with cycle protection via ``visited``).
+    """
     if isinstance(value, list):
         for item in value:
-            _extract_refs(item, out)
+            _extract_refs(item, out, schemas=schemas, visited=visited)
         return
     if not _is_obj(value):
         return
     ref = value.get("$ref")
     if isinstance(ref, str) and ref.startswith("#/components/schemas/"):
-        out.add(ref.rsplit("/", 1)[-1])
+        name = ref.rsplit("/", 1)[-1]
+        out.add(name)
+        if schemas is not None:
+            if visited is None:
+                visited = set()
+            if name not in visited:
+                visited.add(name)
+                schema = schemas.get(name)
+                if schema is not None:
+                    _extract_refs(schema, out, schemas=schemas, visited=visited)
     for child in value.values():
-        _extract_refs(child, out)
+        _extract_refs(child, out, schemas=schemas, visited=visited)
 
 
 def _diff_request_body(before_op: dict[str, Any], after_op: dict[str, Any]) -> list[dict[str, Any]]:
@@ -625,10 +645,12 @@ def diff_openapi(baseline: dict[str, Any], current: dict[str, Any]) -> dict[str,
         assert before is not None and after is not None
         changes = _diff_operations(before["operation"], after["operation"])
         related: set[str] = set()
-        _extract_refs(after["operation"], related)
-        _extract_refs(before["operation"], related)
+        # Resolve $refs transitively through both baseline and current schemas so
+        # nested component changes bubble up to parent operations.
+        _extract_refs(after["operation"], related, schemas=current_schemas)
+        _extract_refs(before["operation"], related, schemas=baseline_schemas)
         related_keys: list[str] = []
-        for schema_name in related:
+        for schema_name in sorted(related):
             st = schema_status.get(schema_name)
             if st and st != "unchanged":
                 related_keys.append(f"schemas.{schema_name}")

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "swagger-diff-ui"
-version = "0.1.0"
+version = "0.1.1"
 description = "Drop-in Swagger UI with OpenAPI schema diff (branch/commit baseline)"
 readme = "README.md"
 requires-python = ">=3.10"

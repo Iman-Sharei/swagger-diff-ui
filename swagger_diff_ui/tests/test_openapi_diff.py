@@ -158,6 +158,177 @@ def test_param_requiredness_is_update_not_add_remove():
     assert "optional → required" in req_changes[0]["message"]
 
 
+def test_nested_schema_change_bubbles_up_to_parent_operation():
+    """Transitive $ref changes must mark the parent operation UPDATE.
+
+    Mirrors home-aggregate endpoints that only $ref a wrapper schema while the
+    actual field change lives several $ref levels deeper.
+    """
+    baseline = {
+        "openapi": "3.0.3",
+        "paths": {
+            "/home/": {
+                "get": {
+                    "responses": {
+                        "200": {
+                            "description": "ok",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/TeacherHome"}
+                                }
+                            },
+                        }
+                    },
+                }
+            },
+            "/meeting/{id}/": {
+                "get": {
+                    "responses": {
+                        "200": {
+                            "description": "ok",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/MeetingCalendar"
+                                    }
+                                }
+                            },
+                        }
+                    },
+                }
+            },
+        },
+        "components": {
+            "schemas": {
+                "TeacherHome": {
+                    "type": "object",
+                    "properties": {
+                        "next_sessions": {
+                            "$ref": "#/components/schemas/TeacherHomeNextSessionsSection"
+                        }
+                    },
+                },
+                "TeacherHomeNextSessionsSection": {
+                    "type": "object",
+                    "properties": {
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/components/schemas/TeacherHomeNextSessionItem"
+                            },
+                        }
+                    },
+                },
+                "TeacherHomeNextSessionItem": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "title": {"type": "string"},
+                    },
+                },
+                "MeetingCalendar": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "title": {"type": "string"},
+                    },
+                },
+            }
+        },
+    }
+    current = {
+        "openapi": "3.0.3",
+        "paths": baseline["paths"],
+        "components": {
+            "schemas": {
+                "TeacherHome": baseline["components"]["schemas"]["TeacherHome"],
+                "TeacherHomeNextSessionsSection": baseline["components"]["schemas"][
+                    "TeacherHomeNextSessionsSection"
+                ],
+                "TeacherHomeNextSessionItem": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "title": {"type": "string"},
+                        "solar_date": {"type": "string"},
+                    },
+                },
+                "MeetingCalendar": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "integer"},
+                        "title": {"type": "string"},
+                        "solar_date": {"type": "string"},
+                    },
+                },
+            }
+        },
+    }
+
+    report = diff_openapi(baseline, current)
+
+    meeting = report["paths"]["GET /meeting/{id}/"]
+    assert meeting["status"] == "updated"
+    assert "schemas.MeetingCalendar" in meeting["relatedSchemaKeys"]
+
+    home = report["paths"]["GET /home/"]
+    assert home["status"] == "updated"
+    assert "schemas.TeacherHomeNextSessionItem" in home["relatedSchemaKeys"]
+    assert any(
+        "solar_date" in c["message"] and "TeacherHomeNextSessionItem" in c["message"]
+        for c in home["changes"]
+    )
+
+
+def test_cyclic_schema_refs_do_not_hang():
+    baseline = {
+        "openapi": "3.0.3",
+        "paths": {
+            "/node/": {
+                "get": {
+                    "responses": {
+                        "200": {
+                            "description": "ok",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/Node"}
+                                }
+                            },
+                        }
+                    },
+                }
+            }
+        },
+        "components": {
+            "schemas": {
+                "Node": {
+                    "type": "object",
+                    "properties": {
+                        "child": {"$ref": "#/components/schemas/Node"},
+                    },
+                }
+            }
+        },
+    }
+    current = {
+        "openapi": "3.0.3",
+        "paths": baseline["paths"],
+        "components": {
+            "schemas": {
+                "Node": {
+                    "type": "object",
+                    "properties": {
+                        "child": {"$ref": "#/components/schemas/Node"},
+                        "label": {"type": "string"},
+                    },
+                }
+            }
+        },
+    }
+    report = diff_openapi(baseline, current)
+    assert report["paths"]["GET /node/"]["status"] == "updated"
+
+
 def test_property_add_and_remove_classified():
     baseline = {
         "openapi": "3.0.3",
@@ -186,6 +357,5 @@ def test_property_add_and_remove_classified():
     report = diff_openapi(baseline, current)
     body = report["components"]["schemas.Body"]
     assert body["status"] == "updated"
-    kinds = {(c["kind"], c.get("target") or c.get("effect")) for c in body["changes"]}
     assert any(c["kind"] == "added" and c.get("target") == "language" for c in body["changes"])
     assert any(c["kind"] == "removed" and c.get("target") == "languages" for c in body["changes"])
