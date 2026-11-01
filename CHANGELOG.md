@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-01
+
 ### Added
 
 - Sample Django project under `examples/sample_project/`
-- GitHub Actions CI workflow (lint-free pytest matrix)
+- GitHub Actions CI workflow (pytest on Python 3.10–3.12)
 - This changelog
 
 ### Fixed
@@ -19,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Package `authors` metadata now lists Iman Sharei instead of a generic contributors label
 - Sample project includes `django.contrib.auth` so `/api/docs/` loads without a 500
 - Baseline worktree runs nested `manage.py` (e.g. `examples/sample_project/`) instead of only repo-root
+- Ignore local `db.sqlite3` files created by the sample project
 
 ## [0.1.1] - 2026-11-01
 
@@ -40,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HTTP helpers for git refs, baseline schema, and diff reports
 - PyPI package metadata and README
 
-[Unreleased]: https://github.com/Iman-Sharei/swagger-diff-ui/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/Iman-Sharei/swagger-diff-ui/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Iman-Sharei/swagger-diff-ui/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Iman-Sharei/swagger-diff-ui/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Iman-Sharei/swagger-diff-ui/releases/tag/v0.1.0

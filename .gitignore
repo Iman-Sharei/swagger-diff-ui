@@ -1,6 +1,10 @@
 # OpenAPI schema baseline cache
 .schema-cache/
 
+# Local Django DBs (sample project, etc.)
+db.sqlite3
+*.sqlite3
+
 # Python
 __pycache__/
 *.py[cod]

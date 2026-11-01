@@ -187,11 +187,11 @@ finish() {
 TOTAL_STAGES=3
 ENV_FILE=".env.pypi"   # local-only; keep out of git
 
-banner "Publish swagger-diff-ui 0.1.1 to PyPI"
+banner "Publish swagger-diff-ui 0.1.2 to PyPI"
 
 stage "Confirm package artifacts"
 say "Built wheel + sdist should already exist under dist/."
-if [[ ! -f dist/swagger_diff_ui-0.1.1-py3-none-any.whl || ! -f dist/swagger_diff_ui-0.1.1.tar.gz ]]; then
+if [[ ! -f dist/swagger_diff_ui-0.1.2-py3-none-any.whl || ! -f dist/swagger_diff_ui-0.1.2.tar.gz ]]; then
   warn "dist/ artifacts missing — rebuilding now."
   if [[ -x .venv/bin/python ]]; then
     .venv/bin/python -m build
@@ -200,9 +200,9 @@ if [[ ! -f dist/swagger_diff_ui-0.1.1-py3-none-any.whl || ! -f dist/swagger_diff
   fi
 fi
 step "Confirm these files exist:"
-note "  dist/swagger_diff_ui-0.1.1-py3-none-any.whl"
-note "  dist/swagger_diff_ui-0.1.1.tar.gz"
-ls -la dist/swagger_diff_ui-0.1.1* || true
+note "  dist/swagger_diff_ui-0.1.2-py3-none-any.whl"
+note "  dist/swagger_diff_ui-0.1.2.tar.gz"
+ls -la dist/swagger_diff_ui-0.1.2* || true
 pause "Artifacts look good? Press Enter."
 
 stage "Create a PyPI API token"
@@ -222,8 +222,8 @@ if [[ -z "${PYPI_API_TOKEN}" || "${PYPI_API_TOKEN}" != pypi-* ]]; then
 fi
 write_env PYPI_API_TOKEN "$PYPI_API_TOKEN"
 
-stage "Upload 0.1.1 to PyPI"
-say "This publishes swagger-diff-ui==0.1.1. Version numbers on PyPI are permanent."
+stage "Upload 0.1.2 to PyPI"
+say "This publishes swagger-diff-ui==0.1.2. Version numbers on PyPI are permanent."
 note "Username will be __token__ (Twine API-token mode)."
 if ! confirm "Upload dist/* to https://pypi.org now?"; then
   warn "Upload skipped."
@@ -232,12 +232,12 @@ fi
 export TWINE_USERNAME="__token__"
 export TWINE_PASSWORD="$PYPI_API_TOKEN"
 if [[ -x .venv/bin/python ]]; then
-  .venv/bin/python -m twine upload dist/swagger_diff_ui-0.1.1*
+  .venv/bin/python -m twine upload dist/swagger_diff_ui-0.1.2*
 else
-  python3 -m twine upload dist/swagger_diff_ui-0.1.1*
+  python3 -m twine upload dist/swagger_diff_ui-0.1.2*
 fi
 say "Published. Package page:"
-open_url "https://pypi.org/project/swagger-diff-ui/0.1.1/"
+open_url "https://pypi.org/project/swagger-diff-ui/0.1.2/"
 note "Consumers can upgrade with: pip install -U swagger-diff-ui"
 # ──────────────────────────────────────────────────────────────────────────
 
