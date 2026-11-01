@@ -195,6 +195,20 @@ pip install -e ".[dev]"
 pytest -q
 ```
 
+CI runs the same tests on Python 3.10–3.12 (see `.github/workflows/ci.yml`).
+
+### Sample project
+
+```bash
+cd examples/sample_project
+python manage.py runserver
+# → http://127.0.0.1:8000/api/docs/
+```
+
+See [`examples/sample_project/README.md`](examples/sample_project/README.md).
+
+Release notes: [`CHANGELOG.md`](CHANGELOG.md).
+
 ---
 
 ## 📄 License

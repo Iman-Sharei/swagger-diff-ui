@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from drf_spectacular.utils import extend_schema
 from drf_spectacular.views import SpectacularSwaggerView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -16,6 +17,7 @@ from swagger_diff_ui.services.schema_baseline import (
 )
 
 
+@extend_schema(exclude=True)
 class SchemaGitRefsView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -25,6 +27,7 @@ class SchemaGitRefsView(APIView):
         return Response(list_git_refs(branch=branch))
 
 
+@extend_schema(exclude=True)
 class SchemaBaselineView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -34,6 +37,7 @@ class SchemaBaselineView(APIView):
         return Response(generate_schema_at_ref(ref))
 
 
+@extend_schema(exclude=True)
 class SchemaDiffView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
@@ -47,6 +51,7 @@ class SchemaDiffView(APIView):
         return Response(report)
 
 
+@extend_schema(exclude=True)
 class SwaggerDiffUIView(SpectacularSwaggerView):
     """Drop-in Swagger UI with branch/commit schema diff toolbar."""
 

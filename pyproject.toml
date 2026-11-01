@@ -9,7 +9,9 @@ description = "Drop-in Swagger UI with OpenAPI schema diff (branch/commit baseli
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "swagger-diff-ui contributors" }]
+authors = [
+  { name = "Iman Sharei", email = "imansharei24@gmail.com" },
+]
 dependencies = [
   "Django>=4.2",
   "djangorestframework>=3.14",
