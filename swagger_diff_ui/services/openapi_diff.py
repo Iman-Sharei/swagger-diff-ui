@@ -683,3 +683,115 @@ def diff_openapi(baseline: dict[str, Any], current: dict[str, Any]) -> dict[str,
         _tally(summary, op["status"])
 
     return {"paths": paths, "components": components, "summary": summary}
+
+
+def _path_area(change_path: str) -> str:
+    """Classify a change path as request, response, or schema."""
+    if change_path.startswith("responses.") or ".responses." in change_path:
+        return "response"
+    if (
+        change_path.startswith("parameters.")
+        or change_path.startswith("requestBody")
+        or ".parameters." in change_path
+        or ".requestBody" in change_path
+    ):
+        return "request"
+    if change_path.startswith("schemas.") or "components/schemas" in change_path:
+        return "schema"
+    return "other"
+
+
+def _change_is_breaking(change: dict[str, Any]) -> bool:
+    """Heuristic breaking-change rules (oasdiff-inspired, not exhaustive)."""
+    kind = change.get("kind")
+    path = str(change.get("path") or "")
+    area = _path_area(path)
+    message = str(change.get("message") or "")
+
+    # Removals break existing clients (ops, params, bodies, responses, props, enums).
+    if kind == "removed":
+        return True
+
+    if "enum value removed" in message:
+        return True
+
+    if kind == "required_changed":
+        # Becoming required narrows the request contract.
+        became_required = change.get("after") is True or "optional → required" in message
+        if became_required and area in ("request", "schema", "other"):
+            return True
+        return False
+
+    if kind in ("type_changed", "schema_ref_changed"):
+        return True
+
+    return False
+
+
+def collect_breaking_changes(report: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return a flat list of breaking findings from a ``diff_openapi`` report."""
+    findings: list[dict[str, Any]] = []
+
+    for key, op in (report.get("paths") or {}).items():
+        if op.get("status") == "removed":
+            findings.append(
+                {
+                    "operation": key,
+                    "path": key,
+                    "kind": "operation_removed",
+                    "message": f"Operation {key} removed",
+                    "breaking": True,
+                }
+            )
+            continue
+        if op.get("status") != "updated":
+            continue
+        for change in op.get("changes") or []:
+            if _change_is_breaking(change):
+                findings.append(
+                    {
+                        "operation": key,
+                        "path": change.get("path"),
+                        "kind": change.get("kind"),
+                        "message": change.get("message"),
+                        "breaking": True,
+                    }
+                )
+
+    for key, comp in (report.get("components") or {}).items():
+        if comp.get("status") == "removed":
+            findings.append(
+                {
+                    "operation": None,
+                    "path": key,
+                    "kind": "schema_removed",
+                    "message": f'Schema "{comp.get("name")}" removed',
+                    "breaking": True,
+                }
+            )
+            continue
+        if comp.get("status") != "updated":
+            continue
+        for change in comp.get("changes") or []:
+            if _change_is_breaking(change):
+                findings.append(
+                    {
+                        "operation": None,
+                        "path": change.get("path"),
+                        "kind": change.get("kind"),
+                        "message": change.get("message"),
+                        "breaking": True,
+                    }
+                )
+
+    return findings
+
+
+def annotate_breaking(report: dict[str, Any]) -> dict[str, Any]:
+    """Attach ``breaking`` list + counts onto a diff report (mutates and returns)."""
+    breaking = collect_breaking_changes(report)
+    summary = dict(report.get("summary") or {})
+    summary["breaking"] = len(breaking)
+    report["summary"] = summary
+    report["breaking"] = breaking
+    return report

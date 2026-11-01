@@ -3,7 +3,11 @@
 import pytest
 
 from swagger_diff_ui.exceptions import SchemaDiffError
-from swagger_diff_ui.services.openapi_diff import diff_openapi
+from swagger_diff_ui.services.openapi_diff import (
+    annotate_breaking,
+    collect_breaking_changes,
+    diff_openapi,
+)
 from swagger_diff_ui.services.schema_baseline import validate_git_ref
 
 
@@ -110,6 +114,58 @@ def test_validate_git_ref_accepts_safe_refs():
     assert validate_git_ref("HEAD") == "HEAD"
     assert validate_git_ref("origin/development") == "origin/development"
     assert validate_git_ref("abc123def") == "abc123def"
+    assert validate_git_ref("HEAD~1") == "HEAD~1"
+    assert validate_git_ref("main~3") == "main~3"
+    assert validate_git_ref("HEAD^") == "HEAD^"
+    assert validate_git_ref("develop^2") == "develop^2"
+
+
+def test_collect_breaking_flags_removed_ops_and_required_params():
+    baseline = {
+        "openapi": "3.0.3",
+        "paths": {
+            "/legacy/": {
+                "get": {"responses": {"200": {"description": "ok"}}},
+            },
+            "/users/": {
+                "get": {
+                    "parameters": [
+                        {
+                            "name": "q",
+                            "in": "query",
+                            "required": False,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "responses": {"200": {"description": "ok"}},
+                }
+            },
+        },
+    }
+    current = {
+        "openapi": "3.0.3",
+        "paths": {
+            "/users/": {
+                "get": {
+                    "parameters": [
+                        {
+                            "name": "q",
+                            "in": "query",
+                            "required": True,
+                            "schema": {"type": "string"},
+                        }
+                    ],
+                    "responses": {"200": {"description": "ok"}},
+                }
+            },
+        },
+    }
+    report = annotate_breaking(diff_openapi(baseline, current))
+    kinds = {f["kind"] for f in report["breaking"]}
+    assert "operation_removed" in kinds
+    assert "required_changed" in kinds
+    assert report["summary"]["breaking"] >= 2
+    assert collect_breaking_changes(report)
 
 
 def test_param_requiredness_is_update_not_add_remove():

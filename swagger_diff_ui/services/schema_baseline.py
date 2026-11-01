@@ -18,11 +18,23 @@ from swagger_diff_ui.exceptions import SchemaDiffError, SchemaDiffNotFound
 
 logger = logging.getLogger(__name__)
 
-_REF_RE = re.compile(r"^[A-Za-z0-9._/\-]+$")
+# Branch/tag/SHA plus relative history forms (HEAD~1, main^2, origin/dev~3).
+# Deliberately excludes shell metacharacters, spaces, and ".." path traversal.
+_REF_RE = re.compile(r"^[A-Za-z0-9._/\-~^]+$")
+
+_DEFAULT_SETTINGS_MODULE = "config.settings.local"
 
 
 def _repo_root() -> Path:
     return Path(settings.BASE_DIR).resolve()
+
+
+def _baseline_settings_module() -> str:
+    return (
+        getattr(settings, "SWAGGER_DIFF_SETTINGS_MODULE", None)
+        or os.environ.get("DJANGO_SETTINGS_MODULE")
+        or _DEFAULT_SETTINGS_MODULE
+    )
 
 
 def _ensure_local_only() -> None:
@@ -34,6 +46,7 @@ def _ensure_local_only() -> None:
 
 
 def validate_git_ref(ref: str) -> str:
+    """Accept branch names, SHAs, and relative refs like ``HEAD~1`` / ``main^``."""
     ref = (ref or "").strip()
     if not ref or not _REF_RE.match(ref) or ".." in ref:
         raise SchemaDiffError(detail="Invalid git ref.", code="SCHEMA_DIFF_INVALID_REF")
@@ -163,8 +176,19 @@ def generate_current_schema() -> dict[str, Any]:
     return schema
 
 
-def generate_schema_at_ref(ref: str, *, use_cache: bool = True) -> dict[str, Any]:
-    _ensure_local_only()
+def generate_schema_at_ref(
+    ref: str,
+    *,
+    use_cache: bool = True,
+    require_local: bool = True,
+) -> dict[str, Any]:
+    """Export OpenAPI schema for ``ref`` via a temporary git worktree.
+
+    ``require_local`` gates HTTP/debug use. The management command passes
+    ``False`` so CI can run without ``DEBUG=True``.
+    """
+    if require_local:
+        _ensure_local_only()
     sha = resolve_sha(ref)
     cache = _cache_path(sha)
     if use_cache and cache.exists():
@@ -187,10 +211,7 @@ def generate_schema_at_ref(ref: str, *, use_cache: bool = True) -> dict[str, Any
             ) from exc
 
         env = os.environ.copy()
-        env.setdefault(
-            "DJANGO_SETTINGS_MODULE",
-            os.environ.get("DJANGO_SETTINGS_MODULE", "config.settings.local"),
-        )
+        env["DJANGO_SETTINGS_MODULE"] = _baseline_settings_module()
         env["SCHEMA_DIFF_EXPORT"] = "1"
 
         out_file = tmp_path / "_baseline.openapi.json"
