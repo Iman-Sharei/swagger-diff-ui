@@ -18,6 +18,7 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+.cursor/
 .venv*/
 .env
 .env.*

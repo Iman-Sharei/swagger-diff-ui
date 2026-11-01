@@ -16,8 +16,10 @@ Open http://127.0.0.1:8000/api/docs/
 
 ## CLI check
 
+From this directory (still inside the parent git checkout):
+
 ```bash
 python manage.py swagger_diff --ref HEAD~1 --format text
 ```
 
-Requires this sample directory (or the parent repo) to be a git checkout with at least two commits that change the OpenAPI surface.
+Baseline export creates a temporary worktree of the **repo root**, then runs this nested `manage.py` inside it. The chosen `--ref` must already contain `examples/sample_project/manage.py` (commits from before the sample was added will fail with a clear error).

@@ -26,7 +26,43 @@ _DEFAULT_SETTINGS_MODULE = "config.settings.local"
 
 
 def _repo_root() -> Path:
+    """Django project root (``settings.BASE_DIR``), where ``manage.py`` usually lives."""
     return Path(settings.BASE_DIR).resolve()
+
+
+def _git_toplevel(cwd: Path) -> Path:
+    """Return the git working-tree root that contains ``cwd``."""
+    try:
+        out = subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=cwd,
+            text=True,
+            stderr=subprocess.PIPE,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise SchemaDiffError(
+            detail="Failed to locate git repository root.",
+            code="SCHEMA_DIFF_GIT_UNAVAILABLE",
+        ) from exc
+    return Path(out.strip()).resolve()
+
+
+def manage_py_relative_to_git_root(project_root: Path, git_root: Path) -> Path:
+    """Path to ``manage.py`` relative to the git toplevel (may be nested)."""
+    manage = (project_root / "manage.py").resolve()
+    if not manage.is_file():
+        raise SchemaDiffError(
+            detail="manage.py not found under Django BASE_DIR.",
+            code="SCHEMA_DIFF_GENERATE_FAILED",
+        )
+    git_root = git_root.resolve()
+    try:
+        return manage.relative_to(git_root)
+    except ValueError as exc:
+        raise SchemaDiffError(
+            detail="manage.py is outside the git repository.",
+            code="SCHEMA_DIFF_GENERATE_FAILED",
+        ) from exc
 
 
 def _baseline_settings_module() -> str:
@@ -194,13 +230,16 @@ def generate_schema_at_ref(
     if use_cache and cache.exists():
         return json.loads(cache.read_text(encoding="utf-8"))
 
-    root = _repo_root()
+    project_root = _repo_root()
+    git_root = _git_toplevel(project_root)
+    manage_rel = manage_py_relative_to_git_root(project_root, git_root)
+
     with tempfile.TemporaryDirectory(prefix="schema-wt-") as tmp:
         tmp_path = Path(tmp)
         try:
             subprocess.check_call(
                 ["git", "worktree", "add", "--detach", str(tmp_path), sha],
-                cwd=root,
+                cwd=git_root,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
             )
@@ -214,20 +253,30 @@ def generate_schema_at_ref(
         env["DJANGO_SETTINGS_MODULE"] = _baseline_settings_module()
         env["SCHEMA_DIFF_EXPORT"] = "1"
 
-        out_file = tmp_path / "_baseline.openapi.json"
+        manage_in_wt = tmp_path / manage_rel
+        out_file = manage_in_wt.parent / "_baseline.openapi.json"
         schema: dict[str, Any] | None = None
         try:
+            if not manage_in_wt.is_file():
+                raise SchemaDiffError(
+                    detail=(
+                        "manage.py not found in the baseline worktree at "
+                        f"{manage_rel.as_posix()}. That git ref may predate this "
+                        "Django project layout."
+                    ),
+                    code="SCHEMA_DIFF_GENERATE_FAILED",
+                )
             proc = subprocess.run(
                 [
                     sys.executable,
-                    "manage.py",
+                    manage_in_wt.name,
                     "spectacular",
                     "--file",
                     str(out_file),
                     "--format",
                     "openapi-json",
                 ],
-                cwd=tmp_path,
+                cwd=manage_in_wt.parent,
                 env=env,
                 capture_output=True,
                 text=True,
@@ -255,7 +304,7 @@ def generate_schema_at_ref(
         finally:
             subprocess.run(
                 ["git", "worktree", "remove", "--force", str(tmp_path)],
-                cwd=root,
+                cwd=git_root,
                 capture_output=True,
                 text=True,
                 check=False,

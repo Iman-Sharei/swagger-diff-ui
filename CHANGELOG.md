@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Exclude library helper views from OpenAPI generation so `drf-spectacular` no longer warns about unguessable serializers during CLI / schema export
 - Package `authors` metadata now lists Iman Sharei instead of a generic contributors label
+- Sample project includes `django.contrib.auth` so `/api/docs/` loads without a 500
+- Baseline worktree runs nested `manage.py` (e.g. `examples/sample_project/`) instead of only repo-root
 
 ## [0.1.1] - 2026-11-01
 

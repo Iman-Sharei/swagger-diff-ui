@@ -8,7 +8,10 @@ from swagger_diff_ui.services.openapi_diff import (
     collect_breaking_changes,
     diff_openapi,
 )
-from swagger_diff_ui.services.schema_baseline import validate_git_ref
+from swagger_diff_ui.services.schema_baseline import (
+    manage_py_relative_to_git_root,
+    validate_git_ref,
+)
 
 
 def test_diff_marks_added_removed_and_schema_property_updates():
@@ -118,6 +121,34 @@ def test_validate_git_ref_accepts_safe_refs():
     assert validate_git_ref("main~3") == "main~3"
     assert validate_git_ref("HEAD^") == "HEAD^"
     assert validate_git_ref("develop^2") == "develop^2"
+
+
+def test_manage_py_relative_to_git_root_nested(tmp_path):
+    git_root = tmp_path / "repo"
+    project = git_root / "examples" / "sample_project"
+    project.mkdir(parents=True)
+    (project / "manage.py").write_text("# sample\n", encoding="utf-8")
+
+    rel = manage_py_relative_to_git_root(project, git_root)
+    assert rel.as_posix() == "examples/sample_project/manage.py"
+
+
+def test_manage_py_relative_to_git_root_at_repo_root(tmp_path):
+    git_root = tmp_path / "repo"
+    git_root.mkdir()
+    (git_root / "manage.py").write_text("# root\n", encoding="utf-8")
+
+    rel = manage_py_relative_to_git_root(git_root, git_root)
+    assert rel.as_posix() == "manage.py"
+
+
+def test_manage_py_relative_to_git_root_missing(tmp_path):
+    git_root = tmp_path / "repo"
+    project = git_root / "app"
+    project.mkdir(parents=True)
+    with pytest.raises(SchemaDiffError) as exc:
+        manage_py_relative_to_git_root(project, git_root)
+    assert exc.value.get_codes() == "SCHEMA_DIFF_GENERATE_FAILED"
 
 
 def test_collect_breaking_flags_removed_ops_and_required_params():
