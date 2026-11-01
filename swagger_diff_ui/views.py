@@ -8,6 +8,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from swagger_diff_ui.security import require_same_origin
 from swagger_diff_ui.services.openapi_diff import diff_openapi
 from swagger_diff_ui.services.schema_baseline import (
     generate_current_schema,
@@ -23,6 +24,7 @@ class SchemaGitRefsView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
+        require_same_origin(request)
         branch = request.query_params.get("branch") or None
         return Response(list_git_refs(branch=branch))
 
@@ -33,6 +35,7 @@ class SchemaBaselineView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
+        require_same_origin(request)
         ref = validate_git_ref(request.query_params.get("ref") or "HEAD")
         return Response(generate_schema_at_ref(ref))
 
@@ -43,6 +46,7 @@ class SchemaDiffView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
+        require_same_origin(request)
         ref = validate_git_ref(request.query_params.get("ref") or "HEAD")
         baseline = generate_schema_at_ref(ref)
         current = generate_current_schema()

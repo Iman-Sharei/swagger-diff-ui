@@ -15,6 +15,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -30,10 +32,11 @@ jobs:
       - name: Run unit tests
         run: pytest -q
 
-      - name: Sample project check + schema export
+      - name: Sample project check + schema export + CLI
         working-directory: examples/sample_project
         env:
           DJANGO_SETTINGS_MODULE: sample_project.settings
         run: |
           python manage.py check
           python manage.py spectacular --file /tmp/sample-schema.json --format openapi-json
+          python manage.py swagger_diff --ref HEAD --format text --no-cache

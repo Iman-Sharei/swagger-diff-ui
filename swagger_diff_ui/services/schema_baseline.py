@@ -19,6 +19,7 @@ from swagger_diff_ui.exceptions import SchemaDiffError, SchemaDiffNotFound
 logger = logging.getLogger(__name__)
 
 # Branch/tag/SHA plus relative history forms (HEAD~1, main^2, origin/dev~3).
+# Allows '-' inside names (feature-x) but validate_git_ref rejects a leading '-'.
 # Deliberately excludes shell metacharacters, spaces, and ".." path traversal.
 _REF_RE = re.compile(r"^[A-Za-z0-9._/\-~^]+$")
 
@@ -82,9 +83,18 @@ def _ensure_local_only() -> None:
 
 
 def validate_git_ref(ref: str) -> str:
-    """Accept branch names, SHAs, and relative refs like ``HEAD~1`` / ``main^``."""
+    """Accept branch names, SHAs, and relative refs like ``HEAD~1`` / ``main^``.
+
+    Refs that start with ``-`` are rejected so they cannot be parsed as git
+    options (e.g. ``--output``).
+    """
     ref = (ref or "").strip()
-    if not ref or not _REF_RE.match(ref) or ".." in ref:
+    if (
+        not ref
+        or ref.startswith("-")
+        or not _REF_RE.match(ref)
+        or ".." in ref
+    ):
         raise SchemaDiffError(detail="Invalid git ref.", code="SCHEMA_DIFF_INVALID_REF")
     return ref
 
@@ -93,7 +103,7 @@ def resolve_sha(ref: str) -> str:
     ref = validate_git_ref(ref)
     try:
         out = subprocess.check_output(
-            ["git", "rev-parse", "--verify", ref],
+            ["git", "rev-parse", "--verify", "--end-of-options", ref],
             cwd=_repo_root(),
             text=True,
             stderr=subprocess.PIPE,
@@ -166,9 +176,10 @@ def list_git_refs(
             [
                 "git",
                 "log",
-                commit_ref,
                 f"-n{commit_limit}",
                 "--pretty=format:%H\t%h\t%s\t%cr",
+                "--end-of-options",
+                commit_ref,
             ]
         )
     except subprocess.CalledProcessError as exc:
@@ -238,7 +249,15 @@ def generate_schema_at_ref(
         tmp_path = Path(tmp)
         try:
             subprocess.check_call(
-                ["git", "worktree", "add", "--detach", str(tmp_path), sha],
+                [
+                    "git",
+                    "worktree",
+                    "add",
+                    "--detach",
+                    str(tmp_path),
+                    "--end-of-options",
+                    sha,
+                ],
                 cwd=git_root,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,

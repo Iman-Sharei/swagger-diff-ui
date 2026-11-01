@@ -182,7 +182,8 @@ If your Django settings live elsewhere (e.g. `myproject.settings.dev`), set `DJA
 ## 🔒 Safety notes
 
 - Git baseline **HTTP** APIs are gated to **`DJANGO_ENV == "local"`** or **`DEBUG=True`**
-- The **`swagger_diff` management command** skips that gate so CI can run with `DEBUG=False`
+- Helper endpoints also reject refs starting with `-`, pass refs after ``--end-of-options``, and block cross-site browser calls (``Sec-Fetch-Site`` / mismatched ``Origin``)
+- The **`swagger_diff` management command** skips the local-only gate so CI can run with `DEBUG=False`
 - Do **not** expose the HTTP helpers on production with `DEBUG=True`
 - Prefer wiring `swagger_diff_ui` only in local / staging settings (CLI can stay available wherever `INSTALLED_APPS` includes the package)
 

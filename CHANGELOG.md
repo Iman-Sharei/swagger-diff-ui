@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-01
+
+### Security
+
+- Reject git refs that start with `-` (blocks option-injection like `?branch=--output`)
+- Pass user refs to git after `--end-of-options`
+- Block cross-site browser calls to local schema-diff HTTP helpers
+
+### Fixed
+
+- Exclude test package from published wheels
+- CI runs `manage.py swagger_diff` against the sample project
+- Document Trusted Publishing preference for PyPI releases
+
 ## [0.1.2] - 2026-11-01
 
 ### Added
@@ -43,7 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HTTP helpers for git refs, baseline schema, and diff reports
 - PyPI package metadata and README
 
-[Unreleased]: https://github.com/Iman-Sharei/swagger-diff-ui/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/Iman-Sharei/swagger-diff-ui/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/Iman-Sharei/swagger-diff-ui/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/Iman-Sharei/swagger-diff-ui/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Iman-Sharei/swagger-diff-ui/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Iman-Sharei/swagger-diff-ui/releases/tag/v0.1.0

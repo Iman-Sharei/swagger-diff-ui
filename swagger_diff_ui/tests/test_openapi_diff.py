@@ -106,7 +106,18 @@ def test_diff_marks_added_removed_and_schema_property_updates():
 
 @pytest.mark.parametrize(
     "ref",
-    ["", " ", "../etc/passwd", "HEAD;rm", "feature branch", "a..b"],
+    [
+        "",
+        " ",
+        "../etc/passwd",
+        "HEAD;rm",
+        "feature branch",
+        "a..b",
+        "--output",
+        "-n",
+        "--",
+        "-main",
+    ],
 )
 def test_validate_git_ref_rejects_invalid(ref):
     with pytest.raises(SchemaDiffError) as exc:
@@ -121,6 +132,7 @@ def test_validate_git_ref_accepts_safe_refs():
     assert validate_git_ref("main~3") == "main~3"
     assert validate_git_ref("HEAD^") == "HEAD^"
     assert validate_git_ref("develop^2") == "develop^2"
+    assert validate_git_ref("feature-x") == "feature-x"
 
 
 def test_manage_py_relative_to_git_root_nested(tmp_path):

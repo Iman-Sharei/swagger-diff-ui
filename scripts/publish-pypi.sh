@@ -185,13 +185,12 @@ finish() {
 # ──────────────────────────────────────────────────────────────────────────
 
 TOTAL_STAGES=3
-ENV_FILE=".env.pypi"   # local-only; keep out of git
 
-banner "Publish swagger-diff-ui 0.1.2 to PyPI"
+banner "Publish swagger-diff-ui 0.1.3 to PyPI"
 
 stage "Confirm package artifacts"
 say "Built wheel + sdist should already exist under dist/."
-if [[ ! -f dist/swagger_diff_ui-0.1.2-py3-none-any.whl || ! -f dist/swagger_diff_ui-0.1.2.tar.gz ]]; then
+if [[ ! -f dist/swagger_diff_ui-0.1.3-py3-none-any.whl || ! -f dist/swagger_diff_ui-0.1.3.tar.gz ]]; then
   warn "dist/ artifacts missing — rebuilding now."
   if [[ -x .venv/bin/python ]]; then
     .venv/bin/python -m build
@@ -200,30 +199,24 @@ if [[ ! -f dist/swagger_diff_ui-0.1.2-py3-none-any.whl || ! -f dist/swagger_diff
   fi
 fi
 step "Confirm these files exist:"
-note "  dist/swagger_diff_ui-0.1.2-py3-none-any.whl"
-note "  dist/swagger_diff_ui-0.1.2.tar.gz"
-ls -la dist/swagger_diff_ui-0.1.2* || true
+note "  dist/swagger_diff_ui-0.1.3-py3-none-any.whl"
+note "  dist/swagger_diff_ui-0.1.3.tar.gz"
+ls -la dist/swagger_diff_ui-0.1.3* || true
 pause "Artifacts look good? Press Enter."
 
-stage "Create a PyPI API token"
-say "We need a PyPI API token scoped to this project (or the whole account)."
-open_url "https://pypi.org/manage/account/token/"
-step "Sign in to PyPI if needed."
-step "Token name: swagger-diff-ui-publish (any name is fine)."
-step "Scope: prefer Project: swagger-diff-ui (or Entire account)."
-step "Create token, then copy the full value (starts with pypi-)."
-warn "PyPI shows the token only once — paste it here immediately."
-ask_secret PYPI_API_TOKEN "Paste the PyPI API token:"
+stage "Authenticate for upload"
+say "Preferred: PyPI Trusted Publishing from GitHub Actions (no long-lived token on disk)."
+open_url "https://docs.pypi.org/trusted-publishers/"
+note "Fallback for a one-off local upload: paste a short-lived API token."
+warn "Do not commit tokens. This wizard keeps the token in-memory for this run only."
+ask_secret PYPI_API_TOKEN "Paste the PyPI API token (or leave empty to abort):"
 if [[ -z "${PYPI_API_TOKEN}" || "${PYPI_API_TOKEN}" != pypi-* ]]; then
-  warn "Token looks empty or missing the pypi- prefix."
-  if ! confirm "Continue anyway?"; then
-    exit 1
-  fi
+  warn "Token missing or invalid — aborting."
+  exit 1
 fi
-write_env PYPI_API_TOKEN "$PYPI_API_TOKEN"
 
-stage "Upload 0.1.2 to PyPI"
-say "This publishes swagger-diff-ui==0.1.2. Version numbers on PyPI are permanent."
+stage "Upload 0.1.3 to PyPI"
+say "This publishes swagger-diff-ui==0.1.3. Version numbers on PyPI are permanent."
 note "Username will be __token__ (Twine API-token mode)."
 if ! confirm "Upload dist/* to https://pypi.org now?"; then
   warn "Upload skipped."
@@ -232,12 +225,13 @@ fi
 export TWINE_USERNAME="__token__"
 export TWINE_PASSWORD="$PYPI_API_TOKEN"
 if [[ -x .venv/bin/python ]]; then
-  .venv/bin/python -m twine upload dist/swagger_diff_ui-0.1.2*
+  .venv/bin/python -m twine upload dist/swagger_diff_ui-0.1.3*
 else
-  python3 -m twine upload dist/swagger_diff_ui-0.1.2*
+  python3 -m twine upload dist/swagger_diff_ui-0.1.3*
 fi
+unset TWINE_PASSWORD PYPI_API_TOKEN
 say "Published. Package page:"
-open_url "https://pypi.org/project/swagger-diff-ui/0.1.2/"
+open_url "https://pypi.org/project/swagger-diff-ui/0.1.3/"
 note "Consumers can upgrade with: pip install -U swagger-diff-ui"
 # ──────────────────────────────────────────────────────────────────────────
 
